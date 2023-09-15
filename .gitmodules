@@ -1,0 +1,7 @@
+[submodule "tctl"]
+	path = tctl-snap/tctl
+	url = https://github.com/temporalio/tctl
+	branch = main
+[submodule "tctl-snap/tctl"]
+	path = tctl-snap/tctl
+	url = https://github.com/temporalio/tctl
