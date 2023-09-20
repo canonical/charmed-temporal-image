@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,7 +22,6 @@ import (
 )
 
 const (
-	redirectURI  = "http://localhost:7070/oauth2callback"
 	authEndpoint = "https://accounts.google.com/o/oauth2/auth"
 	scope        = "openid profile email"
 )
@@ -33,39 +33,44 @@ var (
 	clientID     string
 	clientSecret string
 	codeVerifier string
+	redirectURI  string
 )
 
 func main() {
 	env := os.Getenv("TCTL_ENVIRONMENT")
 	if env == "dev" {
 		fmt.Fprintf(os.Stderr, "login command not defined for development environment.\n")
-		return
+		os.Exit(1)
 	}
 
 	var err error
 	clientID, err = cmd.ClientID()
 	if err != nil {
-		return
+		fmt.Fprintf(os.Stderr, "error reading snap argument '%v-google-client-id': %v", env, err)
+		os.Exit(1)
 	}
 
 	if clientID == "" {
 		fmt.Fprintf(os.Stderr, "no google-client-id found for %v environment. use 'sudo snap set tctl %v-google-client-id=\"<client_id>\"'.\n", env, env)
-		return
+		os.Exit(1)
 	}
 
 	clientSecret, err = cmd.ClientSecret()
 	if err != nil {
-		return
+		fmt.Fprintf(os.Stderr, "error reading snap argument '%v-google-client-secret': %v", env, err)
+		os.Exit(1)
 	}
 
 	if clientSecret == "" {
 		fmt.Fprintf(os.Stderr, "no google-client-secret found for %v environment. use 'sudo snap set tctl %v-google-client-secret=\"<client_secret>\"'.\n", env, env)
-		return
+		os.Exit(1)
 	}
 
+	// Error is ignored, as a failure to fetch the token will result in the initiation of the login flow.
 	token, _ := cmd.FetchValidToken(clientID, clientSecret)
 	if token != "" {
-		os.Exit(1)
+		fmt.Fprintf(os.Stdout, "valid access token fetched\n")
+		os.Exit(0)
 	}
 
 	if err := getToken(); err != nil {
@@ -74,13 +79,35 @@ func main() {
 	}
 }
 
+// getFreePort returns an available TCP port number on the localhost.
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
 // getToken returns a valid Google OAuth 2.0 access token.
 func getToken() error {
+	ctx := context.Background()
+	port, err := getFreePort()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting free port: %s\n", err)
+		return err
+	}
+
+	redirectURI = fmt.Sprintf("http://localhost:%v/oauth2callback", port)
 	authURL := generateAuthURL()
 
 	// Automatically open the browser for the user to log in
 	if err := open.Run(authURL); err != nil {
-		fmt.Println("Failed to open the browser:", err)
+		fmt.Fprintf(os.Stderr, "Failed to open the browser: %s\n", err)
 		return err
 	}
 
@@ -90,27 +117,26 @@ func getToken() error {
 	// Start an HTTP server to handle the callback
 	go func() {
 		http.HandleFunc("/oauth2callback", handleCallback)
-		server = &http.Server{Addr: ":7070"}
+		server = &http.Server{Addr: fmt.Sprintf(":%v", port)}
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Println("HTTP server error:", err)
+			fmt.Fprintf(os.Stderr, "HTTP server error: %s\n", err)
 			close(shutdown)
 		}
 	}()
 
 	// Wait for shutdown signal
-	ctx := context.Background()
 	select {
 	case <-shutdownChan:
 		fmt.Println("Received shutdown signal. Shutting down...")
 
 		// Gracefully shut down the server
 		if err := server.Shutdown(ctx); err != nil {
-			fmt.Println("Error during server shutdown:", err)
+			fmt.Fprintf(os.Stdout, "Error during server shutdown: %s\n", err)
 		}
 	case <-shutdown:
 		fmt.Println("Received access token. Shutting down server...")
 		if err := server.Shutdown(ctx); err != nil {
-			fmt.Println("Error during server shutdown:", err)
+			fmt.Fprintf(os.Stderr, "Error during server shutdown: %s\n", err)
 		}
 	}
 
@@ -121,9 +147,6 @@ func getToken() error {
 func generateAuthURL() string {
 	codeVerifier = generateRandomCodeVerifier()
 	codeChallenge := generateCodeChallenge(codeVerifier)
-
-	fmt.Println("codeChallenge: ", codeChallenge)
-	fmt.Println("State: ", state)
 
 	queryParams := url.Values{}
 	queryParams.Add("client_id", clientID)
@@ -162,15 +185,18 @@ func generateCodeChallenge(codeVerifier string) string {
 }
 
 func handleCallback(w http.ResponseWriter, r *http.Request) {
+	defer close(shutdown)
 	r.ParseForm()
 	if r.FormValue("state") != state {
 		http.Error(w, "State mismatch", http.StatusBadRequest)
+		fmt.Fprintf(os.Stderr, "State mismatch: %d\n", http.StatusBadRequest)
 		return
 	}
 
 	authorizationCode := r.FormValue("code")
 	if authorizationCode == "" {
 		http.Error(w, "Authorization code missing", http.StatusBadRequest)
+		fmt.Fprintf(os.Stderr, "Authorization code missing: %d\n", http.StatusBadRequest)
 		return
 	}
 
@@ -185,15 +211,14 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 	path := os.Getenv("SNAP_USER_DATA")
 	err = cmd.WriteTokenToFile(path, tokenResp.AccessToken, "access")
 	if err != nil {
-		fmt.Println("Error writing access token: ", err)
+		fmt.Fprintf(os.Stderr, "Error writing access token: %s\n", err)
 	}
 
 	err = cmd.WriteTokenToFile(path, tokenResp.RefreshToken, "refresh")
 	if err != nil {
-		fmt.Println("Error writing refresh token: ", err)
+		fmt.Fprintf(os.Stderr, "Error writing refresh token: %s\n", err)
 	}
 
-	close(shutdown)
 	fmt.Fprintf(w, "Authentication successful. You can close this window.")
 }
 

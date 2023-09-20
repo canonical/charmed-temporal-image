@@ -1,8 +1,8 @@
 REPO_ROOT = $(CURDIR)
 
-SNAPCRAFT = $(shell which snapcraft)
-ifeq "$(SNAPCRAFT)" ""
-SNAPCRAFT = /usr/bin/snapcraft
+SNAPCRAFT := $(shell command -v snapcraft 2>/dev/null)
+ifeq ($(SNAPCRAFT),)
+$(error "snapcraft is not found in your PATH. Please make sure it is installed and included in your PATH.")
 endif
 
 all: build

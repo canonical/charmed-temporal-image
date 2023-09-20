@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+const emailScope = "https://www.googleapis.com/auth/userinfo.email"
+
 type tokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 	AccessToken  string `json:"access_token"`
@@ -22,10 +24,8 @@ type tokenResponse struct {
 
 // ClientID returns the '<env>-google-client-id' snapctl configuration.
 func ClientID() (string, error) {
-	env := os.Getenv("TCTL_ENVIRONMENT")
 	clientID, err := GetSnapctlArg("google-client-id")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading snap argument '%v-google-client-id': %v", env, err)
 		return "", err
 	}
 
@@ -34,10 +34,8 @@ func ClientID() (string, error) {
 
 // ClientSecret returns the '<env>-google-client-secret' snapctl configuration.
 func ClientSecret() (string, error) {
-	env := os.Getenv("TCTL_ENVIRONMENT")
 	clientSecret, err := GetSnapctlArg("google-client-secret")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading snap argument '%v-google-client-secret': %v", env, err)
 		return "", err
 	}
 
@@ -81,7 +79,6 @@ func FetchValidToken(clientID string, clientSecret string) (string, error) {
 		return respToken.AccessToken, nil
 	}
 
-	fmt.Fprintf(os.Stdout, "valid access token fetched\n")
 	return accessToken, nil
 }
 
@@ -102,7 +99,7 @@ func verifyToken(accessToken string) error {
 	expirationTime := time.Unix(intExp, 0)
 	currentTime := time.Now()
 
-	if !strings.Contains(token.Scope, "https://www.googleapis.com/auth/userinfo.email") {
+	if !strings.Contains(token.Scope, emailScope) {
 		return errors.New("token scope must include email")
 	}
 
@@ -200,6 +197,8 @@ func getTokenInfo(accessToken string) (*TokenInfo, error) {
 	return &tokenInfo, nil
 }
 
+// refreshAccessToken refreshes an access token using a refresh token and
+// the Google OAuth2 token endpoint.
 func refreshAccessToken(clientID string, clientSecret string, refreshToken string) (*tokenResponse, error) {
 	tokenEndpoint := "https://oauth2.googleapis.com/token"
 
@@ -235,6 +234,8 @@ func refreshAccessToken(clientID string, clientSecret string, refreshToken strin
 	return &tokenResp, nil
 }
 
+// GetSnapctlArg retrieves a configuration value using the "snapctl get" command
+// with the specified argument and the current TCTL_ENVIRONMENT.
 func GetSnapctlArg(arg string) (string, error) {
 	env := os.Getenv("TCTL_ENVIRONMENT")
 	execCmd := exec.Command("snapctl", "get", fmt.Sprintf("%v-%v", env, arg))
