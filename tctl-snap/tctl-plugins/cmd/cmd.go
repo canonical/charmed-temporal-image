@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/errgo.v1"
 )
 
 const emailScope = "https://www.googleapis.com/auth/userinfo.email"
@@ -22,11 +24,19 @@ type tokenResponse struct {
 	AccessToken  string `json:"access_token"`
 }
 
+var ErrNoEmailScope = errgo.New("token scope must include email")
+var ErrEmailNotVerified = errgo.New("token email not verified")
+
 // ClientID returns the '<env>-google-client-id' snapctl configuration.
 func ClientID() (string, error) {
+	env := os.Getenv("TCTL_ENVIRONMENT")
 	clientID, err := GetSnapctlArg("google-client-id")
 	if err != nil {
 		return "", err
+	}
+
+	if clientID == "" {
+		return "", fmt.Errorf("no google-client-id found for %v environment. use 'sudo snap set tctl %v-google-client-id=\"<client_id>\"'", env, env)
 	}
 
 	return clientID, nil
@@ -34,9 +44,14 @@ func ClientID() (string, error) {
 
 // ClientSecret returns the '<env>-google-client-secret' snapctl configuration.
 func ClientSecret() (string, error) {
+	env := os.Getenv("TCTL_ENVIRONMENT")
 	clientSecret, err := GetSnapctlArg("google-client-secret")
 	if err != nil {
 		return "", err
+	}
+
+	if clientSecret == "" {
+		return "", fmt.Errorf("no google-client-secret found for %v environment. use 'sudo snap set tctl %v-google-client-secret=\"<client_secret>\"'", env, env)
 	}
 
 	return clientSecret, nil
@@ -51,20 +66,23 @@ func FetchValidToken(clientID string, clientSecret string) (string, error) {
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			fmt.Fprintf(os.Stderr, "error reading access token from file at path: %v, %v", path, err)
-			return "", err
 		}
 
-		return "", nil
+		return "", err
 	}
 
 	err = verifyToken(accessToken)
 	if err != nil {
+		// Check if original token is missing scope or email verification
+		if errgo.Cause(err) == ErrNoEmailScope || errgo.Cause(err) == ErrEmailNotVerified {
+			return "", err
+		}
+
 		// Refresh access token is a refresh token is available
 		refreshToken, err := readTokenFromFile(path, "refresh")
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
 				fmt.Fprintf(os.Stderr, "error reading refresh token from file at path: %v, %v", path, err)
-				return "", err
 			}
 
 			return "", err
@@ -100,11 +118,11 @@ func verifyToken(accessToken string) error {
 	currentTime := time.Now()
 
 	if !strings.Contains(token.Scope, emailScope) {
-		return errors.New("token scope must include email")
+		return errgo.WithCausef(nil, ErrNoEmailScope, "")
 	}
 
 	if token.EmailVerified != "true" {
-		return errors.New("token email not verified")
+		return errgo.WithCausef(nil, ErrEmailNotVerified, "")
 	}
 
 	if currentTime.After(expirationTime) {

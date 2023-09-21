@@ -7,6 +7,7 @@ require (
 	github.com/hashicorp/go-plugin v1.5.1
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/temporalio/tctl v1.18.0
+	gopkg.in/errgo.v1 v1.0.1
 )
 
 require (

@@ -50,23 +50,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	if clientID == "" {
-		fmt.Fprintf(os.Stderr, "no google-client-id found for %v environment. use 'sudo snap set tctl %v-google-client-id=\"<client_id>\"'.\n", env, env)
-		os.Exit(1)
-	}
-
 	clientSecret, err = cmd.ClientSecret()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error reading snap argument '%v-google-client-secret': %v", env, err)
 		os.Exit(1)
 	}
 
-	if clientSecret == "" {
-		fmt.Fprintf(os.Stderr, "no google-client-secret found for %v environment. use 'sudo snap set tctl %v-google-client-secret=\"<client_secret>\"'.\n", env, env)
-		os.Exit(1)
-	}
-
-	// Error is ignored, as a failure to fetch the token will result in the initiation of the login flow.
+	// Error is ignored, as any failure to fetch a valid token will result in the initiation of the login flow
+	// to fetch a new token.
 	token, _ := cmd.FetchValidToken(clientID, clientSecret)
 	if token != "" {
 		fmt.Fprintf(os.Stdout, "valid access token fetched\n")
