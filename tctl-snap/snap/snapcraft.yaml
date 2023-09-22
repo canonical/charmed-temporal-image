@@ -1,0 +1,74 @@
+name: tctl
+base: core20
+adopt-info: tctl
+summary: temporal command-line tool
+description: command-line tool that can be used to interact with a Temporal Cluster
+grade: stable
+confinement: strict
+
+parts:
+  tctl-plugins:
+    plugin: go
+    source: ./tctl-plugins
+    source-type: local
+    build-packages: [ build-essential, git ]
+    override-build: |-
+      set -ex
+      go build -mod=readonly -o "${SNAPCRAFT_PART_INSTALL}/tctl-authorization" -buildvcs=false ./cmd/tctl-authorization/
+      go build -mod=readonly -o "${SNAPCRAFT_PART_INSTALL}/tctl-login" -buildvcs=false ./cmd/tctl-login/
+    organize:
+      tctl-authorization: bin/
+      tctl-login: bin/
+
+  tctl:
+    plugin: go
+    source: ./tctl
+    source-type: local
+    build-packages: [ build-essential, git ]
+    override-build: |-
+      set -ex
+      go build -mod=readonly -o "${SNAPCRAFT_PART_INSTALL}/tctl" -buildvcs=false ./cmd/tctl
+      $SNAPCRAFT_PART_INSTALL/tctl config set version 2
+      snapcraftctl set-version "$($SNAPCRAFT_PART_INSTALL/tctl -v | tr ' ' '\n' | sed -n 3p)"
+
+  launcher:
+    plugin: nil
+    source: .
+    override-build: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp -av ./launcher.sh $SNAPCRAFT_PART_INSTALL/bin/
+
+apps:
+  dev:
+    environment:
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/snap/bin:$SNAP:$PATH"
+      TCTL_ENVIRONMENT: dev
+      TEMPORAL_CLI_PLUGIN_HEADERS_PROVIDER: tctl-authorization
+      TEMPORAL_CLI_SHOW_STACKS: 64
+    command: bin/launcher.sh tctl
+    plugs:
+      - network
+      - network-bind
+      - desktop
+  prod:
+    environment:
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/snap/bin:$SNAP:$PATH"
+      TCTL_ENVIRONMENT: prod
+      TEMPORAL_CLI_PLUGIN_HEADERS_PROVIDER: tctl-authorization
+      TEMPORAL_CLI_SHOW_STACKS: 64
+    command: bin/launcher.sh tctl
+    plugs:
+      - network
+      - network-bind
+      - desktop
+  stg:
+    environment:
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/snap/bin:$SNAP:$PATH"
+      TCTL_ENVIRONMENT: stg
+      TEMPORAL_CLI_PLUGIN_HEADERS_PROVIDER: tctl-authorization
+      TEMPORAL_CLI_SHOW_STACKS: 64
+    command: bin/launcher.sh tctl
+    plugs:
+      - network
+      - network-bind
+      - desktop

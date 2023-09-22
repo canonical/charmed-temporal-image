@@ -1,0 +1,7 @@
+#!/bin/sh
+
+snapctl set stg-google-client-id=""
+snapctl set stg-google-client-secret=""
+
+snapctl set prod-google-client-id=""
+snapctl set prod-google-client-secret=""
