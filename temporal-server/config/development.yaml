@@ -4,7 +4,7 @@ log:
 
 auth:
   enabled: false
-  adminGroup: admins
+  adminGroups: admins
   openAccessNamespaces: workshop,anotherone
   googleClientID: google_client_id
   ofga:

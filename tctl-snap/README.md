@@ -77,3 +77,5 @@ tctl commands can be run in the following pre-defined three environments:
   # List workflows in namespace
   tctl.prod -n <name> --workflow-id <workflow-id>
   ```
+
+  Other commands can be found [here](https://docs.temporal.io/tctl-v1).

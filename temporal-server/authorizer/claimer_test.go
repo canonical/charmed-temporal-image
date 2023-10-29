@@ -109,7 +109,7 @@ func TestTokenVerifier(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			tv := authorizer.NewVerifier("client_id")
+			tv := authorizer.NewVerifier("client_id", "https://www.googleapis.com/oauth2/v3/tokeninfo", "https://www.googleapis.com/auth/userinfo.email")
 
 			err := tv.VerifyToken(test.token)
 			if test.expectedErr != "" {
@@ -135,7 +135,7 @@ func TestGetClaims(t *testing.T) {
 		desc string
 		// Inputs
 		authInfo          *authorization.AuthInfo
-		adminGroup        string
+		adminGroups       string
 		setupExpectations func(tv *mock.MockTokenVerifier, np *mock.MockNamespaceAccessProvider) []*gomock.Call
 		// Outputs
 		expectedClaims *authorization.Claims
@@ -145,7 +145,7 @@ func TestGetClaims(t *testing.T) {
 		authInfo: &authorization.AuthInfo{
 			AuthToken: validAuthToken,
 		},
-		adminGroup: "system",
+		adminGroups: "system",
 		setupExpectations: func(tv *mock.MockTokenVerifier, np *mock.MockNamespaceAccessProvider) []*gomock.Call {
 			return []*gomock.Call{
 				tv.EXPECT().GetTokenInfo(gomock.Any()).Return(validToken, nil),
@@ -162,7 +162,7 @@ func TestGetClaims(t *testing.T) {
 			authInfo: &authorization.AuthInfo{
 				AuthToken: validAuthToken,
 			},
-			adminGroup: "system",
+			adminGroups: "system",
 			setupExpectations: func(tv *mock.MockTokenVerifier, np *mock.MockNamespaceAccessProvider) []*gomock.Call {
 				return []*gomock.Call{
 					tv.EXPECT().GetTokenInfo(gomock.Any()).Return(validToken, nil),
@@ -195,7 +195,7 @@ func TestGetClaims(t *testing.T) {
 			cm := authorizer.TokenClaimMapper{
 				TokenVerifier:           tv,
 				NamespaceAccessProvider: np,
-				AdminGroup:              test.adminGroup,
+				AdminGroups:             test.adminGroups,
 			}
 			claims, err := cm.GetClaims(test.authInfo)
 			c.Assert(claims, qt.DeepEquals, test.expectedClaims)

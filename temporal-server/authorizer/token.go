@@ -31,22 +31,24 @@ type TokenVerifier interface {
 
 type Verifier struct {
 	GoogleClientID string
+	TokenURL       string
+	RequiredScope  string
 }
 
 // NewVerifier returns a new Verifier implementation.
-func NewVerifier(clientID string) *Verifier {
+func NewVerifier(clientID string, tokenUrl string, requiredScope string) *Verifier {
 	return &Verifier{
 		GoogleClientID: clientID,
+		TokenURL:       tokenUrl,
+		RequiredScope:  requiredScope,
 	}
 }
 
 // GetTokenInfo fetches a given access token's information.
 func (v Verifier) GetTokenInfo(accessToken string) (*TokenInfo, error) {
-	url := "https://www.googleapis.com/oauth2/v3/tokeninfo"
-
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", v.TokenURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +89,7 @@ func (v Verifier) VerifyToken(token *TokenInfo) error {
 		return errors.New("incorrect token client id")
 	}
 
-	if !strings.Contains(token.Scope, "https://www.googleapis.com/auth/userinfo.email") {
+	if v.RequiredScope != "" && !strings.Contains(token.Scope, v.RequiredScope) {
 		return errors.New("token scope must include email")
 	}
 

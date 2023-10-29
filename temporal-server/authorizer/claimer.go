@@ -26,6 +26,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/canonical/ofga"
@@ -60,19 +61,24 @@ type TokenClaimMapper struct {
 	// NamespaceAccessProvider is used to identify the namespaces that the user
 	// logging in via the access token has access to.
 	NamespaceAccessProvider NamespaceAccessProvider
-	// AdminGroup specifies a group which gives full system access to all users
-	// belonging to it.
-	AdminGroup string
-	// OpenAccessNamespace specifies a namespace to which everyone with valid
-	// login credentials has access. If empty, no such namespace will be
+	// AdminGroups is a comma-separated list of groups which gives full system
+	// access to all users belonging to them.
+	AdminGroups string
+	// OpenAccessNamespaces is a comma-separated list of namespaces to which everyone
+	// with valid login credentials has access. If empty, no such namespace will be
 	// configured.
-	OpenAccessNamespace string
+	OpenAccessNamespaces string
 	// Logger is used for logging TokenClaimMapper operations.
 	Logger *zap.Logger
 }
 
-func NewTokenClaimMapper(ctx context.Context, cfg *ConfigWithAuth, logger *zap.Logger) (authorization.ClaimMapper, error) {
+var roleMap = map[string]authorization.Role{
+	"reader": authorization.RoleReader,
+	"writer": authorization.RoleWriter,
+	"admin":  authorization.RoleAdmin,
+}
 
+func NewTokenClaimMapper(ctx context.Context, cfg *ConfigWithAuth, logger *zap.Logger) (authorization.ClaimMapper, error) {
 	client, err := ofga.NewClient(ctx, ofga.OpenFGAParams{
 		Scheme:      cfg.Auth.OFGA.APIScheme,
 		Host:        cfg.Auth.OFGA.APIHost,
@@ -86,10 +92,10 @@ func NewTokenClaimMapper(ctx context.Context, cfg *ConfigWithAuth, logger *zap.L
 	}
 	return &TokenClaimMapper{
 		NamespaceAccessProvider: &AuthClient{OfgaClient: client},
-		TokenVerifier:           NewVerifier(cfg.Auth.GoogleClientID),
+		TokenVerifier:           NewVerifier(cfg.Auth.GoogleClientID, "https://www.googleapis.com/oauth2/v3/tokeninfo", "https://www.googleapis.com/auth/userinfo.email"),
 		Logger:                  logger,
-		AdminGroup:              cfg.Auth.AdminGroup,
-		OpenAccessNamespace:     cfg.Auth.OpenAccessNamespaces,
+		AdminGroups:             cfg.Auth.AdminGroup,
+		OpenAccessNamespaces:    cfg.Auth.OpenAccessNamespaces,
 	}, nil
 }
 
@@ -139,26 +145,20 @@ func (c TokenClaimMapper) GetClaims(authInfo *authorization.AuthInfo) (*authoriz
 		return nil, c.generateError(fmt.Sprintf("error reading namespace access: %v \n", err))
 	}
 
-	openAccessNamespaces := strings.Split(c.OpenAccessNamespace, ",")
+	openAccessNamespaces := strings.Split(c.OpenAccessNamespaces, ",")
 	for _, ns := range openAccessNamespaces {
 		claims.Namespaces[ns] = authorization.RoleWriter
 	}
 
+	adminGroupsSlice := strings.Split(c.AdminGroups, ",")
 	for _, ns := range namespaceAccess {
-		if ns.Namespace == c.AdminGroup && ns.Relation == "admin" {
-			claims.System = authorization.RoleWriter
-		} else {
-			if ns.Namespace != "" {
-				if ns.Relation == "reader" {
-					claims.Namespaces[ns.Namespace] = authorization.RoleReader
-				}
-
-				if ns.Relation == "writer" {
-					claims.Namespaces[ns.Namespace] = authorization.RoleWriter
-				}
-
-				if ns.Relation == "admin" {
-					claims.Namespaces[ns.Namespace] = authorization.RoleAdmin
+		if ns.Namespace != "" {
+			if slices.Contains(adminGroupsSlice, ns.Namespace) && ns.Relation == "admin" {
+				claims.System = authorization.RoleWriter
+			} else {
+				role, exists := roleMap[ns.Relation]
+				if exists {
+					claims.Namespaces[ns.Namespace] = role
 				}
 			}
 		}
