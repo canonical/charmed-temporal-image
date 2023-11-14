@@ -83,8 +83,6 @@ func TestAuthorize(t *testing.T) {
 	}}
 
 	for _, test := range tests {
-		test := test
-
 		c.Run(test.desc, func(c *qt.C) {
 			c.Parallel()
 

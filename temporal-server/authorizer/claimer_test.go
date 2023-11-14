@@ -7,7 +7,7 @@ import (
 
 	"github.com/canonical/charmed-temporal-image/temporal-server/authorizer"
 	mock "github.com/canonical/charmed-temporal-image/temporal-server/authorizer/mocks"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	qt "github.com/frankban/quicktest"
 	"go.temporal.io/server/common/authorization"
@@ -130,7 +130,7 @@ func TestGetClaims(t *testing.T) {
 		Email:         "user@example.com",
 		Scope:         "https://www.googleapis.com/auth/userinfo.email",
 	}
-	validAuthToken := "Bearer W3siYyI6W3siaSI6InRpbWUtYmVmb3JlIDIwMjItMTEtMDJUMDA6MDA6MDBaIn0seyJpIjoidXNlcm5hbWUgbG9seW91Zm91bmRtZSJ9XSwibCI6ImFnZW50IiwiaTY0IjoiQXdvUVFGbDA5VmFFVTBQT1RlRlRhQU9Rd3hJZ056bGxOMkpsTjJJeE9EVTJNRGczWldKbFpEZ3haVE0xWW1VNU1qZGtNek1hRGdvRmJHOW5hVzRTQld4dloybHUiLCJzNjQiOiJDeWJ2bTY3Sjc3N2UxeVBTS0U0RWE5dDgtQzdsRnJiZ3RVTmhudUVfc3R3In1dCg=="
+	validAuthToken := "Bearer sometoken"
 	tests := []struct {
 		desc string
 		// Inputs

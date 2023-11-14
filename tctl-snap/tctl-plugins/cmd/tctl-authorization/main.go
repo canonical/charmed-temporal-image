@@ -14,6 +14,10 @@ type provider struct{}
 
 func (p provider) GetHeaders(ctx context.Context) (map[string]string, error) {
 	env := os.Getenv("TCTL_ENVIRONMENT")
+	if env == "dev" {
+		return map[string]string{}, nil
+	}
+
 	clientID, err := cmd.ClientID()
 	if err != nil {
 		return map[string]string{}, err

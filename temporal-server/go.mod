@@ -9,7 +9,10 @@ require (
 	go.temporal.io/server v1.21.5
 )
 
-require google.golang.org/grpc v1.57.0 // indirect
+require (
+	github.com/golang/mock v1.7.0-rc.1 // indirect
+	google.golang.org/grpc v1.57.0 // indirect
+)
 
 require (
 	github.com/canonical/ofga v0.7.0
@@ -18,10 +21,7 @@ require (
 	google.golang.org/api v0.139.0 // indirect
 )
 
-require (
-	github.com/frankban/quicktest v1.14.5
-	github.com/golang/mock v1.7.0-rc.1
-)
+require github.com/frankban/quicktest v1.14.5
 
 require (
 	cloud.google.com/go v0.110.6 // indirect
@@ -118,10 +118,11 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/dig v1.16.1 // indirect
 	go.uber.org/fx v1.19.1 // indirect
+	go.uber.org/mock v0.3.0
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb // indirect
-	golang.org/x/mod v0.9.0 // indirect
+	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect

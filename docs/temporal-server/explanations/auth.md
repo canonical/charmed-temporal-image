@@ -20,7 +20,7 @@ be done by:
 - The use of a Google Cloud
   [service account](https://cloud.google.com/iam/docs/service-account-overview),
   which can be enabled using the
-  [temporal-lib](https://github.com/canonical/temporal-lib) and
+  [temporal-lib-go](https://github.com/canonical/temporal-lib-go) and
   [temporal-lib-py](https://github.com/canonical/temporal-lib-py) client
   libraries.
 
@@ -60,10 +60,10 @@ user `john` is a member of group `abc`, and group `abc` is related to namespace
 namespace `example`. This is essentially how we achieve multi-tenancy, since
 Temporal namespaces cannot exchange any information between them.
 
-As a special config, we allow the specification of a group that, if users belong
-to it, they have full access to the entire System. This is like a super-admin
-group. The config is called `adminGroup`, further on this in the Config section
-below.
+As a special config, we allow the specification of a set of groups that, if
+users belong to any of them, they have full access to the entire System. These
+are like super-admin groups. The config is called `adminGroups`, further on this
+in the Config section below.
 
 Temporal offers 4 different roles: `Admin`, `Writer`, `Reader` and `Worker`.
 However, they do not have any inherent meaning. It is the `Authorizer` that

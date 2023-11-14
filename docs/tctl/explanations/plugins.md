@@ -15,7 +15,7 @@ are adding 2 extra plugins:
 The tctl-login plugin is a simple binary that starts a web browser to perform
 Google authentication using the provided Google client ID and client secret,
 then fetches Google OAuth access and refresh tokens, which it then stores in the
-local filesystem.
+local filesystem under `/home/<user>/snap/tctl/current/`.
 
 The binary that is built will have the name `tctl-login`. By default, the `tctl`
 tool will look in the path for executables named `tctl-<name>` and will call
@@ -35,7 +35,17 @@ token from the local filesystem that was created by `tctl-login` and sets it as
 an `Authorization` header to the request towards Temporal Server.
 
 This plugin must be provided to the `tctl` tool by configuring the following env
-variable: `TEMPORAL_CLI_PLUGIN_HEADERS_PROVIDER=tctl-authorization`.
+variable: `TEMPORAL_CLI_PLUGIN_HEADERS_PROVIDER=tctl-authorization`, which is
+done automatically through the snap configuration. Below are some configurations
+that must be manually set by the user to use the tctl snap depending on the
+environment:
+
+- `stg-google-client-id`
+- `stg-google-client-secret`
+- `prod-google-client-id`
+- `prod-google-client-secret`
+
+More information can be found [here](../../../tctl-snap/README.md).
 
 ## Packaging
 

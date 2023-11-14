@@ -10,6 +10,9 @@ import (
 	"time"
 )
 
+const serviceAccountSuffix = ".iam.gserviceaccount.com"
+
+// TokenInfo holds information parsed from a Google OAuth token.
 type TokenInfo struct {
 	Azp           string `json:"azp"`
 	Aud           string `json:"aud"`
@@ -22,13 +25,7 @@ type TokenInfo struct {
 	AccessType    string `json:"access_type"`
 }
 
-// TokenVerifier is an interface that defines the methods
-// to fetch token information and verify their validity.
-type TokenVerifier interface {
-	GetTokenInfo(accessToken string) (*TokenInfo, error)
-	VerifyToken(token *TokenInfo) error
-}
-
+// Verifier provides configuration parameters for verifying Google OAuth tokens.
 type Verifier struct {
 	GoogleClientID string
 	TokenURL       string
@@ -85,7 +82,7 @@ func (v Verifier) VerifyToken(token *TokenInfo) error {
 	expirationTime := time.Unix(intExp, 0)
 	currentTime := time.Now()
 
-	if !strings.HasSuffix(token.Email, ".iam.gserviceaccount.com") && v.GoogleClientID != "" && token.Azp != v.GoogleClientID {
+	if !strings.HasSuffix(token.Email, serviceAccountSuffix) && v.GoogleClientID != "" && token.Azp != v.GoogleClientID {
 		return errors.New("incorrect token client id")
 	}
 

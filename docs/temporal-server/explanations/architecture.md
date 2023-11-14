@@ -44,11 +44,10 @@ returned information. Although these are only accessible to people that hold
 credentials to a particular namespace, one might want to add an extra layer of
 security via encryption. As such, Temporal supports E2E encryption of all data
 that is passed to the Temporal Server, such that only the workers will know the
-exact data and the Server will only have encrypted versions of it.
-
-This works transparently for the Temporal Server. Therefore,to leverage this
+exact data and the Server will only have encrypted versions of it. This works
+transparently for the Temporal Server. Therefore, to leverage this
 functionality, please refer to the
-[temporal-lib](https://github.com/canonical/temporal-lib) and
+[temporal-lib-go](https://github.com/canonical/temporal-lib-go) and
 [temporal-lib-py](https://github.com/canonical/temporal-lib-py) client libraries
 where this is implemented.
 

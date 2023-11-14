@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	authorizer "github.com/canonical/charmed-temporal-image/temporal-server/authorizer"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockNamespaceAccessProvider is a mock of NamespaceAccessProvider interface.

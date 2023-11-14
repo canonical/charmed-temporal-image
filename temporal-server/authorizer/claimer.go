@@ -36,6 +36,13 @@ import (
 
 //go:generate mockgen -destination=mocks/groups_provider_gen.go -package=mock github.com/canonical/charmed-temporal-image/temporal-server/authorizer NamespaceAccessProvider,TokenVerifier
 
+// TokenVerifier is an interface that defines the methods
+// to fetch token information and verify their validity.
+type TokenVerifier interface {
+	GetTokenInfo(accessToken string) (*TokenInfo, error)
+	VerifyToken(token *TokenInfo) error
+}
+
 type NamespaceAccess struct {
 	Namespace string
 	Relation  string
@@ -94,7 +101,7 @@ func NewTokenClaimMapper(ctx context.Context, cfg *ConfigWithAuth, logger *zap.L
 		NamespaceAccessProvider: &AuthClient{OfgaClient: client},
 		TokenVerifier:           NewVerifier(cfg.Auth.GoogleClientID, "https://www.googleapis.com/oauth2/v3/tokeninfo", "https://www.googleapis.com/auth/userinfo.email"),
 		Logger:                  logger,
-		AdminGroups:             cfg.Auth.AdminGroup,
+		AdminGroups:             cfg.Auth.AdminGroups,
 		OpenAccessNamespaces:    cfg.Auth.OpenAccessNamespaces,
 	}, nil
 }
@@ -107,7 +114,7 @@ func NewTokenClaimMapper(ctx context.Context, cfg *ConfigWithAuth, logger *zap.L
 // It then verifies the groups that the user presented in the access token belongs
 // to via OpenFGA and gives access to various Temporal namespaces according to them.
 //
-// If the user belongs to the AdminGroup group, they get RoleWriter on the global
+// If the user belongs to any of the AdminGroups groups, they get RoleWriter on the global
 // System namespace. If the user is a member of a group in OpenFGA with some level of
 // access to a given namespace, they get that access level to the namespace. E.g.
 // If user `john` is a member of group `abc`, and group `abc` is related to namespace `example`

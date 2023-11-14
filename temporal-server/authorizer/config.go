@@ -20,7 +20,7 @@ type ConfigWithAuth struct {
 type Auth struct {
 	Enabled              bool                `yaml:"enabled"`
 	OFGA                 AuthorizationConfig `yaml:"ofga"`
-	AdminGroup           string              `yaml:"adminGroup"`
+	AdminGroups          string              `yaml:"adminGroups"`
 	OpenAccessNamespaces string              `yaml:"openAccessNamespaces"`
 	GoogleClientID       string              `yaml:"googleClientID"`
 }

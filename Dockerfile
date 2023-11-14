@@ -63,9 +63,9 @@ WORKDIR /etc/temporal
 ENV TEMPORAL_HOME /etc/temporal
 ENV SERVICES "internal-frontend:history:matching:frontend:worker"
 
-# Membership ports used by the multiple services (frontend, history, matching, worker)
+# Membership ports used by the multiple services (frontend, history, matching, worker, internal-frontend)
 EXPOSE 6933 6934 6935 6939 6936
-# GRPC ports used by the multiple services (frontend, history, matching, worker)
+# GRPC ports used by the multiple services (frontend, history, matching, worker, internal-frontend)
 EXPOSE 7233 7234 7235 7239 7236
 
 # TODO switch WORKDIR to /home/temporal and remove "mkdir" and "chown" calls.
