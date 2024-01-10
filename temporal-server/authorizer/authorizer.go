@@ -24,16 +24,22 @@ package authorizer
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"go.temporal.io/server/common/authorization"
+	"go.uber.org/zap"
 )
 
-type authorizer struct{}
+type authorizer struct {
+	logger *zap.Logger
+}
 
 // NewAuthorizer returns a new authorization.Authorizer implementation.
-func NewAuthorizer() authorization.Authorizer {
-	return &authorizer{}
+func NewAuthorizer(logger *zap.Logger) authorization.Authorizer {
+	return &authorizer{
+		logger: logger,
+	}
 }
 
 var decisionAllow = authorization.Result{Decision: authorization.DecisionAllow}
@@ -50,15 +56,17 @@ var decisionDeny = authorization.Result{Decision: authorization.DecisionDeny}
 // performed on their source.
 func (a *authorizer) Authorize(_ context.Context, claims *authorization.Claims,
 	target *authorization.CallTarget) (authorization.Result, error) {
+	apiName := shortApiName(target.APIName)
 
 	if claims == nil {
+		a.logWarn(fmt.Sprintf("denied access to %s on namespace %s, no claims provided", apiName, target.Namespace))
 		return decisionDeny, nil
 	}
 
 	requiredRole := authorization.RoleWriter
-	if authorization.IsReadOnlyGlobalAPI(shortApiName(target.APIName)) {
+	if authorization.IsReadOnlyGlobalAPI(apiName) {
 		requiredRole = authorization.RoleReader
-	} else if authorization.IsReadOnlyNamespaceAPI(shortApiName(target.APIName)) {
+	} else if authorization.IsReadOnlyNamespaceAPI(apiName) {
 		requiredRole = authorization.RoleReader
 	}
 
@@ -70,7 +78,15 @@ func (a *authorizer) Authorize(_ context.Context, claims *authorization.Claims,
 		return decisionAllow, nil
 	}
 
+	a.logWarn(fmt.Sprintf("denied access to %s on namespace %s; namespaces found in claims: %v", apiName, target.Namespace, claims.Namespaces))
+
 	return decisionDeny, nil
+}
+
+func (a *authorizer) logWarn(msg string) {
+	if a.logger != nil {
+		a.logger.Warn(msg)
+	}
 }
 
 func shortApiName(api string) string {

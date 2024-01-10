@@ -34,7 +34,10 @@ which will allow us to deploy our charm using this custom image.
 3. Enable authentication on the Temporal Web UI charm as follows:
 
    ```bash
-   juju config temporal-ui-k8s auth-enabled=true auth-client-id="<google_client_id>" auth-secret-id="<google_secret_id>"
+   juju config temporal-ui-k8s \
+     auth-enabled=true \
+     auth-client-id="<google_client_id>" \
+     auth-client-secret="<google_secret_id>"
    ```
 
 4. Enable the microk8s registry:

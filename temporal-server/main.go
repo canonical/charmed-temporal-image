@@ -135,7 +135,8 @@ func buildCLI() *cli.App {
 					return cli.Exit(fmt.Sprintf("Unable to load configuration: %v.", err), 1)
 				}
 
-				logger := log.NewZapLogger(log.BuildZapLogger(cfg.Log))
+				zapLogger := log.BuildZapLogger(cfg.Log)
+				logger := log.NewZapLogger(zapLogger)
 				logger.Info("Build info",
 					tag.Timestamp(time.Now()),
 					tag.NewStringTag("platform", runtime.GOARCH),
@@ -158,11 +159,11 @@ func buildCLI() *cli.App {
 				authorizer := authorization.NewNoopAuthorizer()
 				if cfg.Auth.Enabled {
 					ctx := context.Background()
-					claimMapper, err = auth.NewTokenClaimMapper(ctx, cfg, log.BuildZapLogger(cfg.Log))
+					claimMapper, err = auth.NewTokenClaimMapper(ctx, cfg, zapLogger)
 					if err != nil {
 						return cli.Exit(fmt.Sprintf("Unable to initialize claim mapper: %v.", err), 1)
 					}
-					authorizer = auth.NewAuthorizer()
+					authorizer = auth.NewAuthorizer(zapLogger)
 				}
 
 				server, err := temporal.NewServer(

@@ -7,7 +7,7 @@ import (
 
 	"github.com/canonical/charmed-temporal-image/temporal-server/authorizer"
 	mock "github.com/canonical/charmed-temporal-image/temporal-server/authorizer/mocks"
-	"go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 
 	qt "github.com/frankban/quicktest"
 	"go.temporal.io/server/common/authorization"
@@ -145,36 +145,53 @@ func TestGetClaims(t *testing.T) {
 		authInfo: &authorization.AuthInfo{
 			AuthToken: validAuthToken,
 		},
-		adminGroups: "system",
+		adminGroups: "group1",
 		setupExpectations: func(tv *mock.MockTokenVerifier, np *mock.MockNamespaceAccessProvider) []*gomock.Call {
 			return []*gomock.Call{
 				tv.EXPECT().GetTokenInfo(gomock.Any()).Return(validToken, nil),
 				tv.EXPECT().VerifyToken(gomock.Any()).Return(nil),
-				np.EXPECT().GetNamespaceAccessInformation(gomock.Any(), gomock.Any()).Return([]authorizer.NamespaceAccess{{Namespace: "foobar", Relation: "writer"}}, nil),
+				np.EXPECT().GetUserGroups(gomock.Any(), gomock.Any()).Return([]string{"group1", "group2"}, nil),
+			}
+		},
+		expectedClaims: &authorization.Claims{
+			System:     authorization.RoleWriter,
+			Namespaces: map[string]authorization.Role{},
+		},
+	}, {
+		desc: "success: authInfo contains valid token and user does not have access to namespace",
+		authInfo: &authorization.AuthInfo{
+			AuthToken: validAuthToken,
+		},
+		adminGroups: "group1",
+		setupExpectations: func(tv *mock.MockTokenVerifier, np *mock.MockNamespaceAccessProvider) []*gomock.Call {
+			return []*gomock.Call{
+				tv.EXPECT().GetTokenInfo(gomock.Any()).Return(validToken, nil),
+				tv.EXPECT().VerifyToken(gomock.Any()).Return(nil),
+				np.EXPECT().GetUserGroups(gomock.Any(), gomock.Any()).Return([]string{}, nil),
+				np.EXPECT().GetNamespaceAccessInformation(gomock.Any(), gomock.Any(), gomock.Any()).Return([]authorizer.NamespaceAccess{}, nil),
+			}
+		},
+		expectedClaims: &authorization.Claims{
+			Namespaces: map[string]authorization.Role{"": authorization.RoleReader},
+		},
+	}, {
+		desc: "success: authInfo contains valid token and user has access to namespace",
+		authInfo: &authorization.AuthInfo{
+			AuthToken: validAuthToken,
+		},
+		adminGroups: "group1",
+		setupExpectations: func(tv *mock.MockTokenVerifier, np *mock.MockNamespaceAccessProvider) []*gomock.Call {
+			return []*gomock.Call{
+				tv.EXPECT().GetTokenInfo(gomock.Any()).Return(validToken, nil),
+				tv.EXPECT().VerifyToken(gomock.Any()).Return(nil),
+				np.EXPECT().GetUserGroups(gomock.Any(), gomock.Any()).Return([]string{}, nil),
+				np.EXPECT().GetNamespaceAccessInformation(gomock.Any(), gomock.Any(), gomock.Any()).Return([]authorizer.NamespaceAccess{{Namespace: "foobar", Relation: "writer"}}, nil),
 			}
 		},
 		expectedClaims: &authorization.Claims{
 			Namespaces: map[string]authorization.Role{"": authorization.RoleReader, "foobar": authorization.RoleWriter},
 		},
 	},
-		{
-			desc: "success: authInfo contains valid token and user belongs to admin group and specific group",
-			authInfo: &authorization.AuthInfo{
-				AuthToken: validAuthToken,
-			},
-			adminGroups: "system",
-			setupExpectations: func(tv *mock.MockTokenVerifier, np *mock.MockNamespaceAccessProvider) []*gomock.Call {
-				return []*gomock.Call{
-					tv.EXPECT().GetTokenInfo(gomock.Any()).Return(validToken, nil),
-					tv.EXPECT().VerifyToken(gomock.Any()).Return(nil),
-					np.EXPECT().GetNamespaceAccessInformation(gomock.Any(), gomock.Any()).Return([]authorizer.NamespaceAccess{{Namespace: "foobar", Relation: "writer"}, {Namespace: "system", Relation: "admin"}}, nil),
-				}
-			},
-			expectedClaims: &authorization.Claims{
-				System:     authorization.RoleWriter,
-				Namespaces: map[string]authorization.Role{"": authorization.RoleReader, "foobar": authorization.RoleWriter},
-			},
-		},
 	}
 
 	for _, test := range tests {

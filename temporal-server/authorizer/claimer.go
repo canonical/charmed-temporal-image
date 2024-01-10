@@ -51,7 +51,8 @@ type NamespaceAccess struct {
 // NamespaceAccessProvider is an interface that defines the method to retrieve namespace
 // access information for a given email.
 type NamespaceAccessProvider interface {
-	GetNamespaceAccessInformation(ctx context.Context, email string) ([]NamespaceAccess, error)
+	GetUserGroups(ctx context.Context, email string) ([]string, error)
+	GetNamespaceAccessInformation(ctx context.Context, email string, groups []string) ([]NamespaceAccess, error)
 }
 
 // AuthClient implements the necessary methods needed to fetch namespace access
@@ -147,7 +148,22 @@ func (c TokenClaimMapper) GetClaims(authInfo *authorization.AuthInfo) (*authoriz
 
 	email := tokenInfo.Email
 	ctx := context.Background()
-	namespaceAccess, err := c.NamespaceAccessProvider.GetNamespaceAccessInformation(ctx, email)
+
+	adminGroupsSlice := strings.Split(c.AdminGroups, ",")
+	userGroups, err := c.NamespaceAccessProvider.GetUserGroups(ctx, email)
+	if err != nil {
+		return nil, c.generateError(fmt.Sprintf("error reading group membership: %v \n", err))
+	}
+
+	// Check for admin group membership
+	for _, grp := range adminGroupsSlice {
+		if grp != "" && slices.Contains(userGroups, grp) {
+			claims.System = authorization.RoleWriter
+			return &claims, nil
+		}
+	}
+
+	namespaceAccess, err := c.NamespaceAccessProvider.GetNamespaceAccessInformation(ctx, email, userGroups)
 	if err != nil {
 		return nil, c.generateError(fmt.Sprintf("error reading namespace access: %v \n", err))
 	}
@@ -157,16 +173,13 @@ func (c TokenClaimMapper) GetClaims(authInfo *authorization.AuthInfo) (*authoriz
 		claims.Namespaces[ns] = authorization.RoleWriter
 	}
 
-	adminGroupsSlice := strings.Split(c.AdminGroups, ",")
+	hasNamespaces := false
 	for _, ns := range namespaceAccess {
 		if ns.Namespace != "" {
-			if slices.Contains(adminGroupsSlice, ns.Namespace) && ns.Relation == "admin" {
-				claims.System = authorization.RoleWriter
-			} else {
-				role, exists := roleMap[ns.Relation]
-				if exists {
-					claims.Namespaces[ns.Namespace] = role
-				}
+			role, exists := roleMap[ns.Relation]
+			if exists {
+				claims.Namespaces[ns.Namespace] = role
+				hasNamespaces = true
 			}
 		}
 	}
@@ -175,17 +188,16 @@ func (c TokenClaimMapper) GetClaims(authInfo *authorization.AuthInfo) (*authoriz
 		claims.Namespaces[""] = authorization.RoleReader
 	}
 
+	if !hasNamespaces && c.Logger != nil {
+		c.Logger.Warn(fmt.Sprintf("received request with valid token but no namespace access; groups found: %v", userGroups))
+	}
+
 	return &claims, nil
 }
 
 // GetNamespaceAccessInformation returns a list of namespaces that a user with the given email
 // has access to along with the type of relation they have (One of "reader", "writer" or "admin").
-func (c *AuthClient) GetNamespaceAccessInformation(ctx context.Context, email string) ([]NamespaceAccess, error) {
-	groups, err := c.getUserGroups(ctx, email)
-	if err != nil {
-		return nil, err
-	}
-
+func (c *AuthClient) GetNamespaceAccessInformation(ctx context.Context, email string, groups []string) ([]NamespaceAccess, error) {
 	var namespaceAccess []NamespaceAccess
 	for _, group := range groups {
 		continuationToken := ""
@@ -216,9 +228,9 @@ func (c *AuthClient) GetNamespaceAccessInformation(ctx context.Context, email st
 	return namespaceAccess, nil
 }
 
-// getUserGroups returns a list of groups that a user with the given email
+// GetUserGroups returns a list of groups that a user with the given email
 // is a member of in the OpenFGA store.
-func (c *AuthClient) getUserGroups(ctx context.Context, email string) ([]string, error) {
+func (c *AuthClient) GetUserGroups(ctx context.Context, email string) ([]string, error) {
 	var groups []string
 	continuationToken := ""
 	for {
