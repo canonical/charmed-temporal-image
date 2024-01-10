@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	authorizer "github.com/canonical/charmed-temporal-image/temporal-server/authorizer"
-	gomock "go.uber.org/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockNamespaceAccessProvider is a mock of NamespaceAccessProvider interface.
@@ -36,18 +36,33 @@ func (m *MockNamespaceAccessProvider) EXPECT() *MockNamespaceAccessProviderMockR
 }
 
 // GetNamespaceAccessInformation mocks base method.
-func (m *MockNamespaceAccessProvider) GetNamespaceAccessInformation(arg0 context.Context, arg1 string) ([]authorizer.NamespaceAccess, error) {
+func (m *MockNamespaceAccessProvider) GetNamespaceAccessInformation(arg0 context.Context, arg1 string, arg2 []string) ([]authorizer.NamespaceAccess, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNamespaceAccessInformation", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetNamespaceAccessInformation", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]authorizer.NamespaceAccess)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetNamespaceAccessInformation indicates an expected call of GetNamespaceAccessInformation.
-func (mr *MockNamespaceAccessProviderMockRecorder) GetNamespaceAccessInformation(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockNamespaceAccessProviderMockRecorder) GetNamespaceAccessInformation(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceAccessInformation", reflect.TypeOf((*MockNamespaceAccessProvider)(nil).GetNamespaceAccessInformation), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNamespaceAccessInformation", reflect.TypeOf((*MockNamespaceAccessProvider)(nil).GetNamespaceAccessInformation), arg0, arg1, arg2)
+}
+
+// GetUserGroups mocks base method.
+func (m *MockNamespaceAccessProvider) GetUserGroups(arg0 context.Context, arg1 string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserGroups", arg0, arg1)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserGroups indicates an expected call of GetUserGroups.
+func (mr *MockNamespaceAccessProviderMockRecorder) GetUserGroups(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserGroups", reflect.TypeOf((*MockNamespaceAccessProvider)(nil).GetUserGroups), arg0, arg1)
 }
 
 // MockTokenVerifier is a mock of TokenVerifier interface.

@@ -2,7 +2,7 @@ ARG GOPROXY
 ARG DOCKER_REGISTRY
 
 ### Golang target ###
-FROM ${DOCKER_REGISTRY}golang:1.20 AS golang
+FROM ${DOCKER_REGISTRY}golang:1.21 AS golang
 RUN go version
 
 

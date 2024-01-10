@@ -8,6 +8,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"go.temporal.io/server/common/authorization"
+	"go.temporal.io/server/common/log"
 )
 
 func TestAuthorize(t *testing.T) {
@@ -87,7 +88,8 @@ func TestAuthorize(t *testing.T) {
 			c.Parallel()
 
 			// Execution
-			a := authorizer.NewAuthorizer()
+			zapLogger := log.BuildZapLogger(log.Config{})
+			a := authorizer.NewAuthorizer(zapLogger)
 			result, err := a.Authorize(context.Background(), test.claims, &authorization.CallTarget{
 				APIName:   test.target,
 				Namespace: test.targetNS,
