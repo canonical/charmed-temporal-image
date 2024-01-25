@@ -9,6 +9,8 @@ user-specific access token to be attached with each request made to the Temporal
 server. For more information on how to obtain Google credentials for your
 project, visit
 [Google Cloud Platform Help](https://support.google.com/cloud/answer/6158849?hl=en#zippy=%2Cnative-applications%2Cdesktop-apps).
+For the created web application, you must add
+`http://localhost:5000/oauth2callback` as one of the authorized redirect URIs.
 
 The snap can be installed as follows:
 
@@ -44,7 +46,7 @@ tctl commands can be run in the following pre-defined three environments:
   tctl.stg login
 
   # Include Temporal server address flag in the command
-  tct.stg --address=localhost:7233 namespace list
+  tct.stg --address=<server_hostname>:443 --tls-server-name=<server_hostname> namespace list
   ```
 
 - `prod`: This is a production environment with the authorization plugin
@@ -62,7 +64,7 @@ tctl commands can be run in the following pre-defined three environments:
   tctl.prod login
 
   # Include Temporal server address flag in the command
-  tct.prod --address=localhost:7233 namespace list
+  tct.prod --address=<server_hostname>:443 --tls-server-name=<server_hostname> namespace list
   ```
 
   Some sample operations that can be run in any environment also include:
@@ -79,3 +81,10 @@ tctl commands can be run in the following pre-defined three environments:
   ```
 
   Other commands can be found [here](https://docs.temporal.io/tctl-v1).
+
+  Note: the --tls-server-name flag must be included if TLS is enabled on your
+  deployment through ingress. To avoid having to include the `address` and
+  `tls-server-name` modifiers with every command, you can export the environment
+  variables `TEMPORAL_CLI_ADDRESS` and `TEMPORAL_CLI_TLS_SERVER_NAME` and run
+  the `tctl` command without any modifiers. More information can be found
+  [here](https://docs.temporal.io/tctl-v1#environment-variables).

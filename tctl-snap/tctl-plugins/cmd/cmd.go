@@ -64,10 +64,6 @@ func FetchValidToken(clientID string, clientSecret string) (string, error) {
 	path := os.Getenv("SNAP_USER_DATA")
 	accessToken, err := readTokenFromFile(path, "access")
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			fmt.Fprintf(os.Stderr, "error reading access token from file at path: %v, %v", path, err)
-		}
-
 		return "", err
 	}
 
@@ -160,14 +156,7 @@ func readTokenFromFile(directory string, token_type string) (string, error) {
 	data, err := ioutil.ReadFile(filePath)
 
 	if err != nil {
-		if pathErr, ok := err.(*os.PathError); ok {
-			// Check if file does not exist
-			if pathErr.Err == os.ErrNotExist {
-				return "", os.ErrNotExist
-			}
-		}
-
-		return "", err
+		return "", fmt.Errorf("No valid token found. Please use tctl.%v login.", env)
 	}
 
 	token := string(data)
@@ -233,7 +222,7 @@ func refreshAccessToken(clientID string, clientSecret string, refreshToken strin
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("token refresh failed with status code: %d", response.StatusCode)
+		return nil, fmt.Errorf("token refresh failed with status code: %d. please retry login.", response.StatusCode)
 	}
 
 	var tokenResp tokenResponse
