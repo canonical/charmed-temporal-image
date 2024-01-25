@@ -22,6 +22,17 @@ make all
 sudo snap install tctl_next_amd64.snap --dangerous
 ```
 
+Note: By default, the tctl snap is installed with the `next` version, which is
+not recommended for production environments. Run the following command to switch
+to the stable `v1` version:
+
+```bash
+tctl.<env> config set version current # replace <env> with dev, stg or prod
+
+# Verify version
+tctl.<env> --version
+```
+
 tctl commands can be run in the following pre-defined three environments:
 
 - `dev`: This environment does not have the authorization plugin enabled and
@@ -46,7 +57,7 @@ tctl commands can be run in the following pre-defined three environments:
   tctl.stg login
 
   # Include Temporal server address flag in the command
-  tct.stg --address=<server_hostname>:443 --tls-server-name=<server_hostname> namespace list
+  tct.stg --address=<server_hostname>:443 --tls_server_name=<server_hostname> namespace list
   ```
 
 - `prod`: This is a production environment with the authorization plugin
@@ -64,7 +75,7 @@ tctl commands can be run in the following pre-defined three environments:
   tctl.prod login
 
   # Include Temporal server address flag in the command
-  tct.prod --address=<server_hostname>:443 --tls-server-name=<server_hostname> namespace list
+  tct.prod --address=<server_hostname>:443 --tls_server_name=<server_hostname> namespace list
   ```
 
   Some sample operations that can be run in any environment also include:
@@ -84,7 +95,7 @@ tctl commands can be run in the following pre-defined three environments:
 
   Note: the --tls-server-name flag must be included if TLS is enabled on your
   deployment through ingress. To avoid having to include the `address` and
-  `tls-server-name` modifiers with every command, you can export the environment
+  `tls_server_name` modifiers with every command, you can export the environment
   variables `TEMPORAL_CLI_ADDRESS` and `TEMPORAL_CLI_TLS_SERVER_NAME` and run
   the `tctl` command without any modifiers. More information can be found
   [here](https://docs.temporal.io/tctl-v1#environment-variables).
