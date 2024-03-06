@@ -15,9 +15,11 @@ For the created web application, you must add
 The snap can be installed as follows:
 
 ```bash
-# Build snap
-make all
+# Option 1: Install from SnapStore
+sudo snap install tctl
 
+#Option 2 (development): Build snap
+make all
 # Install snap
 sudo snap install tctl_next_amd64.snap --dangerous
 ```
@@ -40,7 +42,7 @@ tctl commands can be run in the following pre-defined three environments:
   empty authorization header. The following is an example command:
 
   ```bash
-  tctl.dev namespace list
+  tctl.dev --address=localhost:7233 namespace list
   ```
 
 - `stg`: This is a staging environment with the authorization plugin enabled. It
@@ -93,7 +95,7 @@ tctl commands can be run in the following pre-defined three environments:
 
   Other commands can be found [here](https://docs.temporal.io/tctl-v1).
 
-  Note: the --tls-server-name flag must be included if TLS is enabled on your
+  Note: the --tls_server_name flag must be included if TLS is enabled on your
   deployment through ingress. To avoid having to include the `address` and
   `tls_server_name` modifiers with every command, you can export the environment
   variables `TEMPORAL_CLI_ADDRESS` and `TEMPORAL_CLI_TLS_SERVER_NAME` and run
