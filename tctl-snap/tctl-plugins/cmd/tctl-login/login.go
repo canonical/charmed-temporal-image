@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -70,28 +69,10 @@ func main() {
 	}
 }
 
-// getFreePort returns an available TCP port number on the localhost.
-func getFreePort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return 0, err
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
 // getToken returns a valid Google OAuth 2.0 access token.
 func getToken() error {
 	ctx := context.Background()
-	port, err := getFreePort()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting free port: %s\n", err)
-		return err
-	}
+	port := 5000
 
 	redirectURI = fmt.Sprintf("http://localhost:%v/oauth2callback", port)
 	authURL := generateAuthURL()
