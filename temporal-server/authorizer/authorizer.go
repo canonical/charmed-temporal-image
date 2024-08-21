@@ -64,9 +64,7 @@ func (a *authorizer) Authorize(_ context.Context, claims *authorization.Claims,
 	}
 
 	requiredRole := authorization.RoleWriter
-	if authorization.IsReadOnlyGlobalAPI(apiName) {
-		requiredRole = authorization.RoleReader
-	} else if authorization.IsReadOnlyNamespaceAPI(apiName) {
+	if authorization.IsReadOnlyGlobalAPI(apiName) || authorization.IsReadOnlyNamespaceAPI(apiName) || authorization.IsHealthCheckAPI((apiName)) {
 		requiredRole = authorization.RoleReader
 	}
 
