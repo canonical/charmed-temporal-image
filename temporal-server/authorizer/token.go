@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -59,7 +60,11 @@ func (v Verifier) GetTokenInfo(accessToken string) (*TokenInfo, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request error: %s", resp.Status)
+		// Read the response body for more error details
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyString := string(bodyBytes)
+
+		return nil, fmt.Errorf("request error: %s, request body: %s", resp.Status, bodyString)
 	}
 
 	var tokenInfo TokenInfo
