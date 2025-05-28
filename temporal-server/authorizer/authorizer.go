@@ -63,8 +63,14 @@ func (a *authorizer) Authorize(_ context.Context, claims *authorization.Claims,
 		return decisionDeny, nil
 	}
 
+	if authorization.IsHealthCheckAPI(apiName) || authorization.IsHealthCheckAPI(target.APIName) {
+		a.logger.Info(fmt.Sprintf("allowing access to health check API %s", apiName))
+		return decisionAllow, nil
+	}
+
 	requiredRole := authorization.RoleWriter
-	if authorization.IsReadOnlyGlobalAPI(apiName) || authorization.IsReadOnlyNamespaceAPI(apiName) || authorization.IsHealthCheckAPI((apiName)) {
+	if authorization.IsReadOnlyGlobalAPI(apiName) || authorization.IsReadOnlyNamespaceAPI(apiName) {
+		a.logger.Info(fmt.Sprintf("allowing access to read-only API %s", apiName))
 		requiredRole = authorization.RoleReader
 	}
 
@@ -73,6 +79,7 @@ func (a *authorizer) Authorize(_ context.Context, claims *authorization.Claims,
 	}
 
 	if claims.Namespaces[target.Namespace] >= requiredRole {
+		a.logger.Info(fmt.Sprintf("allowing access to %s on namespace %s", apiName, target.Namespace))
 		return decisionAllow, nil
 	}
 
